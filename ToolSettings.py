@@ -2,8 +2,8 @@
 # Name:        Tool Settings
 # Purpose:     Settings Module For The Initialize Project Tool
 # Author:      Mohammed Mwijaa
-# Created:     07/12/2016
-# Copyright:   (c) Mohammed Mwijaa 2016
+# Created:     15/01/2017
+# Copyright:   (c) Mohammed Mwijaa 2017
 # Status:      <Draft>
 #-------------------------------------------------------------------------------
 import arcpy
