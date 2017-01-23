@@ -10,11 +10,52 @@ import arcpy
 from arcpy import env
 import os
 
+def dumpToLogFile(msg):
+    """
+    Write out tool geoprocessing messages to a Log File. This function will
+    be called by each other function to make sure that messages of all severity
+    are written to a log file.
+
+        INPUTS:
+            msg(string):
+                Cross severity messages passed by each individual function.
+    """
+    try:
+        if msg=='':
+            raise ValueError('No Message Received') #change this to arcpy warning
+        else:
+            tFile=open('test.txt', 'a')
+            tFile.write('\n'+msg)
+            tFile.close()
+    except ValueError as e:
+        print(e)
+
+
 def setProjectName():
     """Enter name of the intended project. Note that Project Names SHOULD NOT
     be 'Null', 'None', Empty strings or have spaces and periods within the name.
     Hyphens and Underscores are allowed. """
-    pass
+
+    projectName='Homa Bay' #change to capture user input
+    env.workspace=setSourceDirectory.sourceDir
+    fClass='Kenya_Counties'
+    msg='Starting Log For setProjectName;'
+    try:
+        if arcpy.Exists(fClass):
+            with arcpy.da.SearchCursor(fClass, 'NAME') as cursor:
+                for i in cursor:
+                    if i==projectName:
+                        msg+='{} is a valid county'.format(projectName)
+                    else:
+                        arcpy.AddError('{} is not a valid county'.format(projectName))
+                        msg+=arcpy.GetMessages(2)
+        else:
+            raise TypeError('{} feature class not found'.format(fClass))
+    except TypeError as e:
+        msg+=str(e)
+    dumpToLogFile(msg)
+    return projectName
+
 
 def setSourceDirectory():
     """Navigate to the local directory holding source data. As good practice, we
@@ -26,14 +67,4 @@ def setWorkingDirectory():
     """Navigate to the local folder that will hold working files. These will be
     copied from the source files and analyses done. The folder will also house
     the working Geodatabase. The folder should be created in advance."""
-    pass
-
-def createGDB():
-    """Create personal geodatabase that will be the tool's main workspace. All
-    feature classes and tables will be housed in the geodatabase"""
-    pass
-
-def createExtents():
-    """Create extents shapefile that will serve as the clip feature for other
-    functions. Extent parameters are also given. """
     pass
