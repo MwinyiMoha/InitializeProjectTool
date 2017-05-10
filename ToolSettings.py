@@ -167,7 +167,7 @@ def dumpToLogFile(msg):
     """
     try:
         if msg=='':
-            raise ValueError('No Message Received') #change this to arcpy warning
+            raise ValueError('No Message Received')
         else:
             tFile=open('test.txt', 'a')
             tFile.write('\n'+msg)
