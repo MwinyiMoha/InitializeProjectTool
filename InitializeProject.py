@@ -25,15 +25,16 @@ class initializeProject:
     def copySourceFiles(self):
         """Copy Source Feature Classes from Source to the Working Directory. """
         env.workspace=self.projectSourceDirectory
-        dest=self.projectWorkingDirectory
+        dest=self.projectDatabase
         msg='Copying Source Files; \n'
 
         if os.path.exists(env.workspace):
             fcList=arcpy.ListFeatureClasses()
             for fc in fcList:
-                outName='{}\{}'.format(dest,fc)
-                arcpy.Copy_management(fc, outName)
-            msg+=arcpy.GetMessages()
+                outName=os.path.join(dest, fc[:-4])
+                arcpy.MakeFeatureLayer_management(fc, 'Layer')
+                arcpy.CopyFeatures_management('Layer', outName)
+                msg+=arcpy.GetMessages()
         else:
             raise ValueError('Invalid Directory Path')
         ToolSettings.dumpToLogFile(msg)
@@ -42,20 +43,20 @@ class initializeProject:
         """Create extents shapefile that will serve as the clip feature for the
         clipFeatures function. """
 
-        env.workspace=self.projectWorkingDirectory
+        env.workspace=self.projectDatabase
         msg='Creating County Extents; \n'
-        fClass='County.shp'
+        fc='County'
         if os.path.exists(env.workspace):
-            if arcpy.Exists(fClass):
+            if arcpy.Exists(fc):
                 sqlExp="COUNTY='{}'".format(self.projectName)
-                arcpy.MakeFeatureLayer_management(fClass,'fLayer')
+                arcpy.MakeFeatureLayer_management(fc,'fLayer')
                 msg+=arcpy.GetMessages()+'\n'
                 arcpy.SelectLayerByAttribute_management('fLayer', 'NEW_SELECTION', sqlExp)
                 msg+=arcpy.GetMessages()+'\n'
                 arcpy.CopyFeatures_management('fLayer', '{}_Extents'.format(self.projectName))
                 msg+=arcpy.GetMessages()+'\n'
             else:
-                raise TypeError('{} feature class not found'.format(fClass))
+                raise TypeError('Feature Class Not Found: {}'.format(fc))
         else:
             raise ValueError('Invalid Directory Path: {}'.format(env.workspace))
         ToolSettings.dumpToLogFile(msg)
@@ -64,18 +65,18 @@ class initializeProject:
     def clipFeatures(self):
         """Clip Source Files Using Extents Feature Class"""
         msg='Clipping Features \n'
-        env.workspace=self.projectWorkingDirectory
+        env.workspace=self.projectDatabase
         if os.path.exists(env.workspace):
-            inFeatures='{}_Extents.shp'.format(self.projectName)
+            inFeatures='{}_Extents'.format(self.projectName)
             if arcpy.Exists(inFeatures):
                 arcpy.MakeFeatureLayer_management(inFeatures, 'Extents_Layer')
                 fcList=arcpy.ListFeatureClasses()
                 for fc in fcList:
-                    if fc==inFeatures or fc=='County.shp':
+                    if fc==inFeatures or fc=='County':
                         continue
                     else:
                         arcpy.MakeFeatureLayer_management(fc, 'Layer')
-                        arcpy.Clip_analysis('Layer', 'Extents_Layer', '{}\{}_clip'.format(env.workspace,fc[:-4]))
+                        arcpy.Clip_analysis('Layer', 'Extents_Layer', '{}\{}_clip'.format(env.workspace,fc))
                         msg+=arcpy.GetMessages()
             else:
                 raise ValueError('Feature Class Not Found: {}'.format(inFeatures))
@@ -84,29 +85,24 @@ class initializeProject:
         ToolSettings.dumpToLogFile(msg)
 
 
-    def deleteRedundantFiles(self):  #Untested function
+    def deleteRedundantFiles(self):
         """Remove Source Files After Clipping"""
-        env.workspace=self.projectWorkingDirectory
-        msg='Starting Log For deleteRedundantFiles; \n'
-        try:
-            if os.path.exists(env.workspace):
-                fcList=arcpy.ListFeatureClasses()
-                for fc in fcList:
-                    suffix=fc[-5:]
-                    if suffix=='_clip':
-                        continue
-                    elif fc=='{}_Extents'.format(self.projectName):
-                        continue
-                    else:
-                        arcpy.Delete_management(fc)
-                msg+=arcpy.GetMessages()
-            else:
-                raise ValueError('Invalid Directory Path')
-        except ValueError as e:
-            msg+=str(e)
+        msg='Deleting Redundant Files \n'
+        env.workspace=self.projectDatabase
+        if os.path.exists(env.workspace):
+            fcList=arcpy.ListFeatureClasses()
+            for fc in fcList:
+                suffix=fc[-5:]
+                if suffix=='_clip':
+                    continue
+                elif fc=='{}_Extents'.format(self.projectName):
+                    continue
+                else:
+                    arcpy.Delete_management(fc)
+                    msg+=arcpy.GetMessages()
+        else:
+            raise ValueError('Invalid Directory Path')
         ToolSettings.dumpToLogFile(msg)
-
-
 
 def main():
     """Main Program"""
